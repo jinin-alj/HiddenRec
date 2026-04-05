@@ -458,10 +458,10 @@ def _prompt_day_schema(trip: TripParameters) -> str:
     {
       "date": "YYYY-MM-DD",
       "blocks": [
-        {"start": "08:00", "end": "09:30", "title": "Real breakfast venue", "description": "Short reason.", "kind": "breakfast"},
-        {"start": "12:30", "end": "14:30", "title": "Real lunch venue", "description": "Short reason.", "kind": "lunch"},
-        {"start": "17:00", "end": "18:00", "title": "Real snack / cafe venue", "description": "Short reason.", "kind": "snack"},
-        {"start": "20:00", "end": "22:00", "title": "Real dinner venue", "description": "Short reason.", "kind": "dinner"}
+        {"start": "08:00", "end": "09:30", "title": "<real breakfast café/bakery name from the posts above>", "description": "1-2 sentences: what makes it special, what to order.", "kind": "breakfast"},
+        {"start": "12:30", "end": "14:30", "title": "<real lunch restaurant name from the posts above>", "description": "1-2 sentences: signature dish, vibe, price range.", "kind": "lunch"},
+        {"start": "17:00", "end": "18:00", "title": "<real snack café/bakery name from the posts above>", "description": "1-2 sentences: what to try, why locals love it.", "kind": "snack"},
+        {"start": "20:00", "end": "22:00", "title": "<real dinner restaurant name from the posts above>", "description": "1-2 sentences: what cuisine, must-try dish.", "kind": "dinner"}
       ]
     }
   ]
@@ -471,13 +471,13 @@ def _prompt_day_schema(trip: TripParameters) -> str:
     {
       "date": "YYYY-MM-DD",
       "blocks": [
-        {"start": "08:00", "end": "09:30", "title": "Real breakfast venue", "description": "Short reason.", "kind": "breakfast"},
-        {"start": "09:30", "end": "12:00", "title": "Real place to visit", "description": "Short reason.", "kind": "activity"},
-        {"start": "12:30", "end": "14:30", "title": "Real lunch venue", "description": "Short reason.", "kind": "lunch"},
-        {"start": "14:30", "end": "17:30", "title": "Real place to visit", "description": "Short reason.", "kind": "activity"},
-        {"start": "17:30", "end": "18:30", "title": "Real snack / cafe venue", "description": "Short reason.", "kind": "snack"},
-        {"start": "18:30", "end": "20:00", "title": "Real place to visit", "description": "Short reason.", "kind": "activity"},
-        {"start": "20:00", "end": "22:00", "title": "Real dinner venue", "description": "Short reason.", "kind": "dinner"}
+        {"start": "08:00", "end": "09:30", "title": "<real breakfast café/bakery name from the posts above>", "description": "1-2 sentences: what makes it special, what to order.", "kind": "breakfast"},
+        {"start": "09:30", "end": "12:00", "title": "<real museum/landmark/attraction name from the posts above>", "description": "1-2 sentences: what to see, tips for visiting.", "kind": "activity"},
+        {"start": "12:30", "end": "14:30", "title": "<real lunch restaurant name from the posts above>", "description": "1-2 sentences: signature dish, vibe, price range.", "kind": "lunch"},
+        {"start": "14:30", "end": "17:30", "title": "<real park/neighborhood/attraction name from the posts above>", "description": "1-2 sentences: what to do there, why it is worth visiting.", "kind": "activity"},
+        {"start": "17:30", "end": "18:30", "title": "<real snack café/bakery name from the posts above>", "description": "1-2 sentences: what to try, why locals love it.", "kind": "snack"},
+        {"start": "18:30", "end": "20:00", "title": "<real attraction/neighborhood name from the posts above>", "description": "1-2 sentences: what makes it interesting, best time to visit.", "kind": "activity"},
+        {"start": "20:00", "end": "22:00", "title": "<real dinner restaurant name from the posts above>", "description": "1-2 sentences: what cuisine, must-try dish.", "kind": "dinner"}
       ]
     }
   ]
@@ -488,42 +488,50 @@ def _build_prompt(trip: TripParameters, corpus: str) -> str:
     season = _season_label(trip.start_date)
     dates = [(trip.start_date + timedelta(days=i)).isoformat() for i in range(trip.num_days)]
     dates_list = ", ".join(dates)
+    country = trip.country_hint or "the country"
+    slots_per_day = 4 if trip.food_focused else 7
+    total_slots = trip.num_days * slots_per_day
 
     if trip.food_focused:
-        rules = """
+        rules = f"""
 Mode: FOOD ONLY
-- Each day must have exactly 4 blocks.
-- Only breakfast, lunch, snack, dinner.
+- Each day must have exactly 4 blocks with kind values: breakfast, lunch, snack, dinner.
 - No museums, parks, sightseeing, neighborhoods, shopping, or generic activities.
-- Use real food venues.
+- Every block title MUST be the real name of a specific restaurant, café, bakery, bar, or food market in {trip.city}, {country}.
+- Never repeat the same venue more than twice across the entire trip. Use at least {min(total_slots, total_slots - 2)} different food venues total.
 """
     else:
-        rules = """
+        rules = f"""
 Mode: FULL ITINERARY
-- Each day must have exactly 7 blocks.
-- Include breakfast, 3 activity/sightseeing stops, lunch, snack, and dinner.
-- Use real places and real food venues.
-- Make days feel different from each other.
+- Each day must have exactly 7 blocks: breakfast, activity, lunch, activity, snack, activity, dinner (in that order).
+- Every food block (breakfast, lunch, snack, dinner) title MUST be the real name of a specific restaurant, café, bakery, bar, or food market in {trip.city}, {country}.
+- Every activity block title MUST be the real name of a specific museum, landmark, park, neighborhood, square, viewpoint, or attraction in {trip.city}, {country}.
+- Never repeat the same venue more than twice across the entire trip.
+- You need at least {total_slots - 4} different unique venue names across all {trip.num_days} days.
+- Make each day feel different: visit different neighborhoods, try different cuisines, and vary the types of activities.
 """
 
-    return f"""Plan a {trip.num_days}-day trip to {trip.city}.
+    return f"""Plan a {trip.num_days}-day trip to {trip.city}, {country}.
 Dates: {dates_list}
 Season: {season}
-Budget limit: {trip.budget_amount} {trip.currency}
+Total budget for the entire trip: {trip.budget_amount} {trip.currency}
 
-Use these ideas from social posts:
-{corpus or "(No posts were collected. Still create a reasonable itinerary.)"}
+Below are real social-media posts and recommendations about {trip.city}. You MUST extract actual venue names (restaurants, cafés, landmarks, museums, parks, etc.) from these posts and use them in your itinerary. Do NOT invent names — pull them directly from the scraped text wherever possible:
+
+---BEGIN SCRAPED POSTS---
+{corpus or "(No posts were collected — use your own knowledge of well-known, real venues in " + trip.city + ", " + country + ".)"}
+---END SCRAPED POSTS---
 
 Reply with ONLY one JSON object in this exact structure:
 {{
   "city": "{trip.city}",
-  "country_hint": "{trip.country_hint}",
+  "country_hint": "{country}",
   "season": "{season}",
-  "budget_notes": "One short note about keeping costs reasonable.",
+  "budget_notes": "Brief note on how the plan stays within {trip.budget_amount} {trip.currency}.",
   "places": [
     {{
-      "name": "Real place name",
-      "category": "restaurant or museum or landmark",
+      "name": "<actual venue name extracted from the posts>",
+      "category": "restaurant|café|museum|landmark|park|market|bakery|bar|neighborhood",
       "rough_cost_hint": "15 {trip.currency}",
       "source_urls": []
     }}
@@ -531,13 +539,15 @@ Reply with ONLY one JSON object in this exact structure:
 {_prompt_day_schema(trip)}
 }}
 
-Hard rules:
-- City must remain exactly {trip.city}
-- Include exactly {trip.num_days} day objects with these dates: {dates_list}
-- Prefer activities suitable for {season} or season-neutral
-- Stay within the total budget as best as possible
-- Use real specific venue names, not placeholders
-- Output only JSON, no markdown, no commentary
+CRITICAL RULES:
+1. City must remain exactly "{trip.city}" and country_hint must be "{country}".
+2. Include exactly {trip.num_days} day objects with these exact dates: {dates_list}.
+3. Each block "title" MUST be the real name of a specific venue that exists in {trip.city}, {country}. Pull names from the scraped posts above. NEVER use generic labels like "Breakfast in {trip.city}", "Local restaurant", or "Nice café".
+4. Each block "description" must be 1-2 sentences explaining why this place is worth visiting and what to expect. Do NOT write placeholder text like "Short reason."
+5. The "places" array must list ALL unique venues mentioned in the day blocks.
+6. Prefer activities and outdoor plans suitable for {season}. Avoid out-of-season suggestions.
+7. Keep the estimated total spend across all days within {trip.budget_amount} {trip.currency}. Prefer affordable local spots over tourist traps.
+8. Output only valid JSON. No markdown fences, no commentary, no extra text.
 {rules}
 """
 
@@ -673,40 +683,29 @@ def _slot_template(trip: TripParameters) -> list[tuple[str, str, str]]:
     return FOOD_SLOTS if trip.food_focused else NORMAL_SLOTS
 
 
-def _build_candidate_blocks(plan: ItineraryPlan, trip: TripParameters) -> list[ScheduleBlock]:
+def _build_spare_pool(plan: ItineraryPlan, trip: TripParameters) -> list[ScheduleBlock]:
+    """Build a deduplicated pool of spare candidates from the places list,
+    used only when the LLM's per-day blocks are insufficient."""
     season = _season_label(trip.start_date)
-    candidates: list[ScheduleBlock] = []
-
-    for day in plan.days:
-        for block in day.blocks:
-            if not block.title.strip():
-                continue
-            if _is_bad_for_season(_block_text(block), season):
-                continue
-            candidates.append(
-                ScheduleBlock(
-                    start=block.start,
-                    end=block.end,
-                    title=block.title.strip(),
-                    description=block.description.strip(),
-                    kind=block.kind,
-                )
-            )
+    pool: list[ScheduleBlock] = []
+    seen: set[str] = set()
 
     for place in plan.places:
         title = place.name.strip()
         if not title:
             continue
-        description = "Recommended place"
-        if place.category.strip():
-            description = f"{place.category.strip()}."
+        key = title.lower()
+        if key in seen:
+            continue
+        description = place.category.strip() or "Recommended place"
         if place.rough_cost_hint.strip():
-            description += f" Cost hint: {place.rough_cost_hint.strip()}."
+            description += f". Approx. {place.rough_cost_hint.strip()}"
         text = f"{title} {description}".lower()
         if _is_bad_for_season(text, season):
             continue
         inferred_kind = "meal" if _looks_foodish(text) else "activity"
-        candidates.append(
+        seen.add(key)
+        pool.append(
             ScheduleBlock(
                 start="09:00",
                 end="10:00",
@@ -716,26 +715,38 @@ def _build_candidate_blocks(plan: ItineraryPlan, trip: TripParameters) -> list[S
             )
         )
 
-    deduped: list[ScheduleBlock] = []
-    seen: set[str] = set()
-    for block in candidates:
-        key = block.title.strip().lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(block)
+    for day in plan.days:
+        for block in day.blocks:
+            title = block.title.strip()
+            if not title:
+                continue
+            key = title.lower()
+            if key in seen:
+                continue
+            if _is_bad_for_season(_block_text(block), season):
+                continue
+            seen.add(key)
+            pool.append(
+                ScheduleBlock(
+                    start=block.start,
+                    end=block.end,
+                    title=title,
+                    description=block.description.strip(),
+                    kind=block.kind,
+                )
+            )
 
-    return deduped
+    return pool
 
 
-def _pick_best_candidate(
-    candidates: list[ScheduleBlock],
+def _pick_best_from_pool(
+    pool: list[ScheduleBlock],
     required_kind: str,
     used_titles: set[str],
 ) -> ScheduleBlock | None:
     scored: list[tuple[int, ScheduleBlock]] = []
 
-    for block in candidates:
+    for block in pool:
         key = block.title.strip().lower()
         if key in used_titles:
             continue
@@ -750,34 +761,100 @@ def _pick_best_candidate(
     return scored[0][1]
 
 
-def _repair_plan(plan: ItineraryPlan, trip: TripParameters) -> ItineraryPlan:
-    templates = _slot_template(trip)
-    candidates = _build_candidate_blocks(plan, trip)
-    repaired_days: list[DayPlan] = []
+def _is_placeholder_title(title: str, city: str) -> bool:
+    """Detect generic fallback-style titles the LLM might produce."""
+    low = title.strip().lower()
+    city_low = city.strip().lower()
+    generic_patterns = [
+        f"breakfast in {city_low}",
+        f"lunch in {city_low}",
+        f"dinner in {city_low}",
+        f"snack in {city_low}",
+        f"morning in {city_low}",
+        f"afternoon in {city_low}",
+        f"evening in {city_low}",
+        f"local restaurant",
+        f"local café",
+        f"local cafe",
+        f"local breakfast",
+    ]
+    if any(low == p or low.startswith(p) for p in generic_patterns):
+        return True
+    if re.match(r"^(breakfast|lunch|dinner|snack|meal|activity)\s+(in|at|near)\s+", low):
+        return True
+    return False
 
-    place_costs = _collect_place_costs(plan)
-    global_used_titles: set[str] = set()
+
+def _repair_plan(plan: ItineraryPlan, trip: TripParameters) -> ItineraryPlan:
+    """Normalise the LLM plan into fixed time slots.
+
+    Strategy: keep the LLM's own per-day block assignments wherever they have
+    real venue names that match the required slot kind. Only reach into the
+    spare pool (from ``places`` + other days) when a day's own blocks are
+    missing, generic, or mismatched.  Titles are deduplicated *within* a
+    single day but allowed to repeat across different days.
+    """
+    templates = _slot_template(trip)
+    season = _season_label(trip.start_date)
+    spare_pool = _build_spare_pool(plan, trip)
+    repaired_days: list[DayPlan] = []
 
     for day_index in range(trip.num_days):
         day_date = (trip.start_date + timedelta(days=day_index)).isoformat()
-        day_blocks: list[ScheduleBlock] = []
-        local_used_titles: set[str] = set()
 
+        source_day = plan.days[day_index] if day_index < len(plan.days) else None
+        day_candidates: list[ScheduleBlock] = []
+        if source_day:
+            for block in source_day.blocks:
+                if not block.title.strip():
+                    continue
+                if _is_bad_for_season(_block_text(block), season):
+                    continue
+                day_candidates.append(block)
+
+        day_blocks: list[ScheduleBlock] = []
+        used_today: set[str] = set()
         activity_index = 0
 
         for required_kind, start, end in templates:
-            chosen = _pick_best_candidate(candidates, required_kind, global_used_titles | local_used_titles)
+            chosen: ScheduleBlock | None = None
 
-            if chosen is None and required_kind == "activity":
-                chosen = _pick_best_candidate(candidates, "activity", global_used_titles | local_used_titles)
+            for block in day_candidates:
+                key = block.title.strip().lower()
+                if key in used_today:
+                    continue
+                if _is_placeholder_title(block.title, trip.city):
+                    continue
+                score = _candidate_score(required_kind, block.title, block.description, block.kind)
+                if score >= 3:
+                    chosen = block
+                    break
 
             if chosen is None:
+                for block in day_candidates:
+                    key = block.title.strip().lower()
+                    if key in used_today:
+                        continue
+                    if _is_placeholder_title(block.title, trip.city):
+                        continue
+                    score = _candidate_score(required_kind, block.title, block.description, block.kind)
+                    if score > 0:
+                        chosen = block
+                        break
+
+            if chosen is None:
+                chosen = _pick_best_from_pool(spare_pool, required_kind, used_today)
+
+            if chosen is None or _is_placeholder_title(chosen.title, trip.city):
                 title = _fallback_title(trip.city, required_kind, activity_index)
                 description = _fallback_description(trip.city, required_kind)
             else:
                 title = chosen.title.strip()
                 description = chosen.description.strip()
-                local_used_titles.add(title.lower())
+                if not description or description.lower() in {"short reason.", "short reason"}:
+                    description = f"{required_kind.title()} at {title} in {trip.city}."
+
+            used_today.add(title.strip().lower())
 
             if required_kind == "activity":
                 activity_index += 1
@@ -793,11 +870,10 @@ def _repair_plan(plan: ItineraryPlan, trip: TripParameters) -> ItineraryPlan:
             )
 
         repaired_days.append(DayPlan(date=day_date, blocks=day_blocks))
-        global_used_titles.update(local_used_titles)
 
     repaired = ItineraryPlan(
         city=trip.city,
-        country_hint=plan.country_hint or trip.country_hint,
+        country_hint=plan.country_hint or trip.country_hint or "",
         season=_season_label(trip.start_date),
         budget_notes=plan.budget_notes or f"Estimated total: {_total_estimated_cost(plan):.2f} {trip.currency}",
         places=plan.places,
@@ -814,12 +890,73 @@ def _repair_plan(plan: ItineraryPlan, trip: TripParameters) -> ItineraryPlan:
     return repaired
 
 
+def _normalise_day_payload(day: dict, trip: TripParameters, day_index: int) -> dict:
+    """Coerce alternative LLM day formats into the canonical {date, blocks} shape."""
+    expected_date = (trip.start_date + timedelta(days=day_index)).isoformat()
+    day.setdefault("date", expected_date)
+
+    try:
+        date.fromisoformat(day["date"])
+    except (ValueError, TypeError):
+        day["date"] = expected_date
+
+    raw_blocks = day.get("blocks") or day.get("slots") or day.get("events") or []
+    normalised: list[dict] = []
+    templates = FOOD_SLOTS if trip.food_focused else NORMAL_SLOTS
+
+    for i, block in enumerate(raw_blocks):
+        if not isinstance(block, dict):
+            continue
+
+        title = block.get("title", "").strip()
+        if not title:
+            continue
+
+        start = block.get("start", "")
+        end = block.get("end", "")
+
+        if not start and "time" in block:
+            start = str(block["time"]).strip()
+        if not end and start and i < len(templates):
+            end = templates[i][2]
+        if not start and i < len(templates):
+            start = templates[i][1]
+            end = templates[i][2]
+
+        kind = block.get("kind", block.get("type", ""))
+        if not kind and i < len(templates):
+            kind = templates[i][0]
+
+        normalised.append({
+            "start": start or "09:00",
+            "end": end or "10:00",
+            "title": title,
+            "description": block.get("description", ""),
+            "kind": kind or "activity",
+        })
+
+    day["blocks"] = normalised
+    day.pop("slots", None)
+    day.pop("events", None)
+    day.pop("mode", None)
+    return day
+
+
 def _payload_to_plan(payload: dict, trip: TripParameters) -> ItineraryPlan:
     payload = _patch_missing_fields(payload, trip)
 
     raw_city = _clean_text(payload.get("city"), trip.city)
     if raw_city and not _same_city(raw_city, trip.city):
         raise ValueError(f"Model drifted to wrong city: {raw_city!r} instead of {trip.city!r}")
+
+    raw_days = payload.get("days", [])
+    for i, day in enumerate(raw_days):
+        if isinstance(day, dict):
+            _normalise_day_payload(day, trip, i)
+
+    while len(raw_days) < trip.num_days:
+        raw_days.append({"date": (trip.start_date + timedelta(days=len(raw_days))).isoformat(), "blocks": []})
+    payload["days"] = raw_days
 
     plan = ItineraryPlan.model_validate(payload)
     return _repair_plan(plan, trip)
@@ -840,8 +977,14 @@ def build_itinerary_with_llm(
         {
             "role": "system",
             "content": (
-                "You are a travel planner. Output only valid JSON. "
-                "No markdown. No commentary."
+                "You are a travel planner. The user will provide scraped "
+                "social-media posts about a city. Extract real venue names "
+                "(restaurants, cafés, museums, landmarks, parks) from those "
+                "posts and build the itinerary from them. Never invent "
+                "generic placeholders like 'Lunch in City' or 'Local "
+                "restaurant' — every title must be a real venue name found "
+                "in the posts or widely known in the city. "
+                "Output only valid JSON. No markdown. No commentary."
             ),
         },
         {"role": "user", "content": prompt},

@@ -671,7 +671,7 @@ class HiddenRecApp(tk.Tk):
 
         tk.Button(
             btn_row, text="Open file", font=FONT_CAPTION,
-            bg=COLOR_WH, fg=COLOR_BLACK, relief=tk.FLAT, bd=0,
+            bg=COLOR_WHITE, fg=COLOR_BLACK, relief=tk.FLAT, bd=0,
             activebackground="#333333", activeforeground=COLOR_BLACK,
             cursor="hand2", command=lambda: _open_file(self._path_var),
         ).pack(side=tk.LEFT, padx=6, ipady=6, ipadx=12)
@@ -717,6 +717,12 @@ class HiddenRecApp(tk.Tk):
             self._city_entry.focus_set()
             return
 
+        country = self._country_entry.get().strip()
+        if not country:
+            messagebox.showwarning("HiddenRec", "Please enter a country.")
+            self._country_entry.focus_set()
+            return
+
         try:
             num_days = int(self._days_var.get())
         except ValueError:
@@ -725,7 +731,7 @@ class HiddenRecApp(tk.Tk):
         try:
             self._current_trip = TripParameters(
                 city=city,
-                country_hint=self._country_entry.get().strip(),
+                country_hint=country,
                 start_date=date.fromisoformat(self._date_entry.get().strip()),
                 num_days=num_days,
                 budget_amount=float(self._budget_entry.get().strip().replace(",", ".")),

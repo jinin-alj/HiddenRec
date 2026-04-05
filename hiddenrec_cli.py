@@ -29,8 +29,8 @@ def run_cli_app() -> None:
     parser.add_argument("--city", required=True, help="Destination city")
     parser.add_argument(
         "--country",
-        default="",
-        help="Country hint for search locale (for example Spain)",
+        required=True,
+        help="Country (for example Spain)",
     )
     parser.add_argument(
         "--start",

@@ -201,17 +201,21 @@ def _explore_queries_spanish(city: str) -> dict:
 
 
 def build_search_queries(trip: TripParameters) -> dict:
-    """Return platform specific query lists for the city, mode, and locale."""
-    city = trip.city.strip()
-    if trip.food_focused:
-        base = _food_queries_english(city)
-        if should_include_spanish_queries(trip):
-            base = _merge_query_dicts(base, _food_queries_spanish(city))
-        return base
+    """Return platform specific query lists for the city, mode, and locale.
 
-    base = _explore_queries_english(city)
+    Food queries are always included because every itinerary — even a full
+    sightseeing one — needs real breakfast, lunch, snack, and dinner venues.
+    """
+    city = trip.city.strip()
+    base = _food_queries_english(city)
     if should_include_spanish_queries(trip):
-        base = _merge_query_dicts(base, _explore_queries_spanish(city))
+        base = _merge_query_dicts(base, _food_queries_spanish(city))
+
+    if not trip.food_focused:
+        base = _merge_query_dicts(base, _explore_queries_english(city))
+        if should_include_spanish_queries(trip):
+            base = _merge_query_dicts(base, _explore_queries_spanish(city))
+
     return base
 
 
