@@ -1,5 +1,3 @@
-"""RFC 5545 iCalendar (.ics) export for HiddenRec itineraries."""
-
 from __future__ import annotations
 
 import re
@@ -29,10 +27,6 @@ def write_itinerary_ics(
     timezone_name: str,
     calendar_name: str = "HiddenRec",
 ) -> Path:
-    """
-    Write VEVENTs for each schedule block. Times are interpreted in timezone_name
-    and stored as UTC (Z) for broad client compatibility.
-    """
     path = Path(output_path).expanduser()
     lines: list[str] = [
         "BEGIN:VCALENDAR",

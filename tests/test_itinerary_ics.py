@@ -1,5 +1,3 @@
-"""Tests for itinerary models and ICS export."""
-
 import os
 import re
 import sys

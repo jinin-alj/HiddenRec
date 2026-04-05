@@ -1,5 +1,3 @@
-"""Tests for LLM itinerary planning with a mocked OpenAI compatible client."""
-
 import json
 import os
 import sys

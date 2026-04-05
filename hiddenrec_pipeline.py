@@ -1,5 +1,3 @@
-"""End-to-end pipeline: scrape social posts, plan with an LLM, write an ICS file."""
-
 from __future__ import annotations
 
 import logging
@@ -21,7 +19,6 @@ def _project_root() -> Path:
 
 
 def default_exports_dir() -> Path:
-    """Folder next to the project where calendar files are written."""
     path = _project_root() / "exports"
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -32,10 +29,6 @@ def run_hiddenrec_pipeline(
     log: Callable[[str], None],
     on_progress: ProgressCallback | None = None,
 ) -> Path:
-    """
-    Scrape social posts, ask the LLM to build an itinerary, and write an ICS file.
-    Any exception is allowed to propagate so the caller can display it clearly.
-    """
     def tick(phase: str, fraction: float) -> None:
         if on_progress is not None:
             on_progress(phase, max(0.0, min(1.0, fraction)))

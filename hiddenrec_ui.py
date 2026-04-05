@@ -1,5 +1,3 @@
-"""HiddenRec desktop form: styled trip setup, progress, and completion."""
-
 from __future__ import annotations
 
 import os
@@ -22,17 +20,14 @@ try:
 except ImportError:
     HAS_PIL = False
 
-# Window geometry
 WINDOW_WIDTH = 540
 WINDOW_HEIGHT = 760
 WINDOW_TITLE = "HiddenRec"
 
-# Sky gradient endpoints (RGB tuples)
 SKY_TOP_RGB = (130, 180, 235)
 SKY_BOTTOM_RGB = (210, 240, 255)
 GRADIENT_STRIP_PX = 4
 
-# Colors
 COLOR_BLACK = "#111111"
 COLOR_WHITE = "#ffffff"
 COLOR_MUTED = "#888888"
@@ -43,7 +38,6 @@ COLOR_TOGGLE_ON = "#111111"
 COLOR_TOGGLE_OFF = "#e0e0e0"
 COLOR_TOGGLE_THUMB = "#ffffff"
 
-# Typography
 FONT_LABEL = ("Helvetica Neue", 10, "bold")
 FONT_INPUT = ("Helvetica Neue", 13)
 FONT_SECTION = ("Helvetica Neue", 14, "bold")
@@ -51,15 +45,12 @@ FONT_CAPTION = ("Helvetica Neue", 11)
 FONT_BUTTON = ("Helvetica Neue", 18, "bold")
 FONT_LOADING_TITLE = ("Helvetica Neue", 20, "bold")
 
-# Toggle switch dimensions
 TOGGLE_WIDTH = 48
 TOGGLE_HEIGHT = 26
 TOGGLE_THUMB_RADIUS = 10
 
-# Cloud animation
 CLOUD_ANIMATION_MS = 40
 
-# Logo font
 LOGO_FONT_SIZE = 56
 LOGO_IMAGE_WIDTH = 340
 LOGO_IMAGE_HEIGHT = 72
@@ -69,7 +60,6 @@ FREDOKA_FONT_URL = (
     "https://github.com/google/fonts/raw/main/ofl/fredokaone/FredokaOne-Regular.ttf"
 )
 
-# Form defaults
 DEFAULT_START_DATE = date.today().isoformat()
 DEFAULT_TRIP_DAYS = "3"
 DEFAULT_BUDGET = "500"
@@ -79,7 +69,6 @@ LANGUAGE_OPTIONS = ["auto", "en", "es", "fr", "de", "it", "pt", "ja", "nl"]
 
 
 def lerp_rgb(color_a: tuple, color_b: tuple, t: float) -> str:
-    """Interpolate between two RGB tuples and return a hex color string."""
     r = int(color_a[0] + (color_b[0] - color_a[0]) * t)
     g = int(color_a[1] + (color_b[1] - color_a[1]) * t)
     b = int(color_a[2] + (color_b[2] - color_a[2]) * t)
@@ -93,7 +82,6 @@ def draw_rounded_rect(
     radius: float,
     **kwargs,
 ) -> int:
-    """Draw a smooth rounded rectangle on a canvas using a B-spline polygon."""
     return canvas.create_polygon(
         x1 + radius, y1,
         x2 - radius, y1,
@@ -113,7 +101,6 @@ def draw_rounded_rect(
 
 
 def try_load_fredoka_font() -> object | None:
-    """Download and cache the Fredoka One TTF font, returning a PIL ImageFont or None."""
     if not HAS_PIL:
         return None
     if not os.path.exists(FREDOKA_CACHE_PATH):
@@ -128,10 +115,6 @@ def try_load_fredoka_font() -> object | None:
 
 
 def build_logo_photo_image(pil_font: object | None, text: str = "HiddenRec") -> object | None:
-    """
-    Render text with an outlined style using PIL.
-    Returns a Tkinter-compatible PhotoImage, or None if PIL is unavailable.
-    """
     if not HAS_PIL or pil_font is None:
         return None
 
@@ -139,7 +122,6 @@ def build_logo_photo_image(pil_font: object | None, text: str = "HiddenRec") -> 
     draw = ImageDraw.Draw(image)
     origin = (LOGO_OUTLINE_PX, LOGO_OUTLINE_PX)
 
-    # Outline pass: draw text offset in every direction
     for dx in range(-LOGO_OUTLINE_PX, LOGO_OUTLINE_PX + 1):
         for dy in range(-LOGO_OUTLINE_PX, LOGO_OUTLINE_PX + 1):
             if dx != 0 or dy != 0:
@@ -148,13 +130,11 @@ def build_logo_photo_image(pil_font: object | None, text: str = "HiddenRec") -> 
                     text, font=pil_font, fill=(17, 17, 17, 255),
                 )
 
-    # Fill pass: white text on top of outline
     draw.text(origin, text, font=pil_font, fill=(255, 255, 255, 255))
     return ImageTk.PhotoImage(image)
 
 
 def make_label(parent: tk.Widget, text: str) -> tk.Label:
-    """Return a small uppercase muted label for use above form fields."""
     return tk.Label(
         parent,
         text=text.upper(),
@@ -166,7 +146,6 @@ def make_label(parent: tk.Widget, text: str) -> tk.Label:
 
 
 def make_entry(parent: tk.Widget, **kwargs) -> tk.Entry:
-    """Return a styled flat entry widget."""
     return tk.Entry(
         parent,
         font=FONT_INPUT,
@@ -183,7 +162,6 @@ def make_entry(parent: tk.Widget, **kwargs) -> tk.Entry:
 
 
 def make_separator(parent: tk.Widget) -> tk.Frame:
-    """Return a one-pixel horizontal separator."""
     return tk.Frame(parent, height=1, bg=COLOR_SEPARATOR)
 
 
@@ -216,8 +194,6 @@ def _open_file(path: str) -> None:
 
 
 class ToggleSwitch(tk.Canvas):
-    """A custom toggle switch widget drawn entirely with Canvas primitives."""
-
     def __init__(self, parent: tk.Widget, **kwargs):
         super().__init__(
             parent,
@@ -262,10 +238,7 @@ class ToggleSwitch(tk.Canvas):
 
 
 class HiddenRecApp(tk.Tk):
-    """Main application window with sky background, form, and loading states."""
-
     CLOUD_SPECS = [
-        # (start_x, y, scale, speed_px_per_frame)
         (-320, 60,  1.0,  0.60),
         (140,  140, 0.70, 0.35),
         (-90,  240, 0.85, 0.45),
@@ -374,7 +347,6 @@ class HiddenRecApp(tk.Tk):
                 center_x - 48, center_y,
                 image=self._logo_photo_ref, anchor=tk.CENTER,
             )
-            # Also build the loading title photo if we have the font
             self._title_photo_ref = build_logo_photo_image(pil_font, "BUILDING YOUR ITINERARY...")
         else:
             self._bg_canvas.create_text(

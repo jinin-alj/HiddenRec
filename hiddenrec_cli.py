@@ -1,5 +1,3 @@
-"""Terminal interface for HiddenRec when the Tk desktop UI is not available."""
-
 from __future__ import annotations
 
 import argparse

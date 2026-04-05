@@ -1,5 +1,3 @@
-"""Shared types for scraped social content."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,5 +1,3 @@
-"""Pydantic models for HiddenRec LLM output and ICS generation."""
- 
 from __future__ import annotations
  
 import re
@@ -12,8 +10,7 @@ VALID_KINDS = frozenset({
     "activity", "meal", "sightseeing", "snack",
     "breakfast", "brunch", "lunch", "dinner",
 })
- 
-# Maps common LLM hallucinations to the nearest valid kind.
+
 KIND_COERCION_MAP = {
     "restaurant": "meal",
     "food": "meal",
@@ -40,8 +37,6 @@ KIND_COERCION_MAP = {
  
  
 class TripParameters(BaseModel):
-    """User-selected trip options passed from the GUI to the pipeline."""
- 
     city: str = Field(..., min_length=1)
     country_hint: str = ""
     start_date: date
@@ -81,11 +76,9 @@ class ScheduleBlock(BaseModel):
     @field_validator("kind", mode="before")
     @classmethod
     def coerce_kind(cls, value: object) -> str:
-        """Accept any string and map it to the nearest valid kind rather than rejecting it."""
         text = str(value).strip().lower()
         if text in VALID_KINDS:
             return text
-        # Try the coercion map first, then fall back to substring matching.
         if text in KIND_COERCION_MAP:
             return KIND_COERCION_MAP[text]
         for keyword, mapped in KIND_COERCION_MAP.items():
@@ -120,7 +113,6 @@ def parse_hhmm(s: str) -> time:
  
  
 def combine_local(day: date, t: time, tz_name: str) -> datetime:
-    """Return a timezone-aware datetime. Falls back to UTC if the timezone name is invalid."""
     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
     try:
         zi = ZoneInfo(tz_name)

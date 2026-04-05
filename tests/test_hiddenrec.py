@@ -1,5 +1,3 @@
-"""Unit tests for HiddenRec scraping helpers (no live browser)."""
-
 import os
 import sys
 from datetime import date

@@ -1,5 +1,3 @@
-"""Build a validated itinerary from scraped text using OpenAI or local Ollama."""
-
 from __future__ import annotations
 
 import json
@@ -684,8 +682,6 @@ def _slot_template(trip: TripParameters) -> list[tuple[str, str, str]]:
 
 
 def _build_spare_pool(plan: ItineraryPlan, trip: TripParameters) -> list[ScheduleBlock]:
-    """Build a deduplicated pool of spare candidates from the places list,
-    used only when the LLM's per-day blocks are insufficient."""
     season = _season_label(trip.start_date)
     pool: list[ScheduleBlock] = []
     seen: set[str] = set()
@@ -762,7 +758,6 @@ def _pick_best_from_pool(
 
 
 def _is_placeholder_title(title: str, city: str) -> bool:
-    """Detect generic fallback-style titles the LLM might produce."""
     low = title.strip().lower()
     city_low = city.strip().lower()
     generic_patterns = [
@@ -786,14 +781,6 @@ def _is_placeholder_title(title: str, city: str) -> bool:
 
 
 def _repair_plan(plan: ItineraryPlan, trip: TripParameters) -> ItineraryPlan:
-    """Normalise the LLM plan into fixed time slots.
-
-    Strategy: keep the LLM's own per-day block assignments wherever they have
-    real venue names that match the required slot kind. Only reach into the
-    spare pool (from ``places`` + other days) when a day's own blocks are
-    missing, generic, or mismatched.  Titles are deduplicated *within* a
-    single day but allowed to repeat across different days.
-    """
     templates = _slot_template(trip)
     season = _season_label(trip.start_date)
     spare_pool = _build_spare_pool(plan, trip)
@@ -891,7 +878,6 @@ def _repair_plan(plan: ItineraryPlan, trip: TripParameters) -> ItineraryPlan:
 
 
 def _normalise_day_payload(day: dict, trip: TripParameters, day_index: int) -> dict:
-    """Coerce alternative LLM day formats into the canonical {date, blocks} shape."""
     expected_date = (trip.start_date + timedelta(days=day_index)).isoformat()
     day.setdefault("date", expected_date)
 

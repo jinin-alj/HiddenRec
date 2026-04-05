@@ -1,5 +1,3 @@
-"""HiddenRec: Selenium scrapers for social platforms used by the itinerary pipeline."""
-
 from __future__ import annotations
 
 import os
@@ -27,7 +25,6 @@ LOCALE_SPANISH = "es"
 
 SPAIN_COUNTRY_HINTS = frozenset({"spain", "españa", "espana"})
 
-# Helps when the user enters a well known city without a country hint.
 SPAIN_CITY_NAMES = frozenset(
     {
         "madrid",
@@ -71,7 +68,6 @@ def _food_relevance_score(text: str) -> int:
     return sum(1 for kw in FOOD_RELEVANCE_KEYWORDS if kw in lowered)
 
 def should_include_spanish_queries(trip: TripParameters) -> bool:
-    """Spanish query variants help for cities in Spain when locale is auto or es."""
     mode = trip.locale_queries.strip().lower()
     if mode == LOCALE_SPANISH:
         return True
@@ -201,11 +197,6 @@ def _explore_queries_spanish(city: str) -> dict:
 
 
 def build_search_queries(trip: TripParameters) -> dict:
-    """Return platform specific query lists for the city, mode, and locale.
-
-    Food queries are always included because every itinerary — even a full
-    sightseeing one — needs real breakfast, lunch, snack, and dinner venues.
-    """
     city = trip.city.strip()
     base = _food_queries_english(city)
     if should_include_spanish_queries(trip):
@@ -220,7 +211,6 @@ def build_search_queries(trip: TripParameters) -> dict:
 
 
 def create_driver() -> webdriver.Chrome:
-    """Create a Chrome driver with settings that reduce the chance of bot detection."""
     chrome_options = webdriver.ChromeOptions()
     if os.environ.get("HIDDENREC_HEADLESS", "").lower() in ("1", "true", "yes"):
         chrome_options.add_argument("--headless=new")
@@ -251,14 +241,12 @@ def create_driver() -> webdriver.Chrome:
 
 
 def scroll_page(driver: webdriver.Chrome, times: int = 3) -> None:
-    """Scroll incrementally to trigger lazy loaded content before scraping."""
     for _ in range(times):
         driver.execute_script(f"window.scrollBy(0, {SCROLL_DISTANCE_PX})")
         time.sleep(SCROLL_PAUSE_SECONDS)
 
 
 def dismiss_cookie_banner(driver: webdriver.Chrome) -> None:
-    """Click the first matching cookie acceptance button if one exists on the page."""
     for label in COOKIE_ACCEPT_LABELS:
         try:
             xpath = (
@@ -277,7 +265,6 @@ def find_elements_by_first_matching_selector(
     driver: webdriver.Chrome,
     selectors: list,
 ) -> list:
-    """Return elements from the first selector that produces a non empty result."""
     for selector in selectors:
         elements = driver.find_elements(By.CSS_SELECTOR, selector)
         if elements:
@@ -286,14 +273,12 @@ def find_elements_by_first_matching_selector(
 
 
 def build_scraped_result(platform: str, text: str, url: str):
-    """Return a ScrapedResult only when the text meets the minimum length requirement."""
     if not text or len(text.strip()) < MIN_TEXT_LENGTH:
         return None
     return ScrapedResult(platform=platform, text=text.strip(), url=url)
 
 
 def scrape_reddit(driver: webdriver.Chrome, queries: list) -> list:
-    """Scrape Reddit search results and return post titles and visible snippets."""
     results = []
 
     for query in queries:
@@ -334,7 +319,6 @@ def scrape_reddit(driver: webdriver.Chrome, queries: list) -> list:
 
 
 def scrape_tiktok(driver: webdriver.Chrome, queries: list) -> list:
-    """Scrape TikTok video description text from search result pages."""
     results = []
 
     for query in queries:
@@ -361,7 +345,6 @@ def scrape_tiktok(driver: webdriver.Chrome, queries: list) -> list:
 
 
 def scrape_pinterest(driver: webdriver.Chrome, queries: list) -> list:
-    """Scrape Pinterest pin image alt text and titles."""
     results = []
 
     for query in queries:
@@ -411,7 +394,6 @@ def run_all_scrapers(
     trip: TripParameters,
     queries: dict,
 ) -> list:
-    """Run all platform scrapers in sequence and return the combined results."""
     all_results = []
     all_results.extend(scrape_reddit(driver, queries["reddit"]))
     all_results.extend(scrape_tiktok(driver, queries["tiktok"]))
@@ -432,7 +414,6 @@ def _is_tkinter_missing(exc: BaseException) -> bool:
 
 
 def main() -> None:
-    """Launch the HiddenRec desktop form, or the CLI if tkinter is unavailable."""
     try:
         from hiddenrec_ui import run_hiddenrec_app
     except ImportError as exc:
