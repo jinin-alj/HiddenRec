@@ -15,7 +15,7 @@ def run_cli_app() -> None:
         print(
             "Tkinter is not available on this Python build.\n"
             "Pass trip options on the command line, for example:\n"
-            "  python hiddenrec.py --city Madrid --start 2026-06-01 --days 3\n"
+            "  python hiddenrec_cli.py --city Madrid --country Spain --start 2026-06-01 --days 3\n"
             "Or use a Python install that includes Tcl/Tk (for example python.org).\n"
         )
         raise SystemExit(2)
@@ -81,3 +81,7 @@ def run_cli_app() -> None:
         print(message, flush=True)
 
     run_hiddenrec_pipeline(trip, log)
+
+
+if __name__ == "__main__":
+    run_cli_app()
